@@ -29,10 +29,10 @@ class User extends CEntity
     public function updateMeta($id)
     {
         $this->tableName = "tbl_user_".($id%10);
-			
-		$this->refreshMetaData();
-		
-		return $this;
+            
+        $this->refreshMetaData();
+        
+        return $this;
     }
 
     public function tableName()
@@ -47,9 +47,9 @@ class User extends CEntity
     }
 
     // 增加工作单元特性
-	public function behaviors() {
-		return array('UnitOfWorkBehavior' => array('class' => 'UnitOfWorkBehavior'));
-	}
+    public function behaviors() {
+        return array('UnitOfWorkBehavior' => array('class' => 'UnitOfWorkBehavior'));
+    }
 
 }
 
