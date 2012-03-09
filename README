@@ -1,0 +1,59 @@
+YORM
+
+Advanced Yii ORM Plugin
+
+YORM是一款Yii的第三方ORM插件，以实现一些高级特性，如：读写分离，分表，分库，领域实体，缓存，全局唯一ID以及工作单元。
+
+YORM主要通过继承了Yii的CActiveRecord类开发的CEntity类（实体类），以及一些实现高级特性的行为类，来使Yii程序支持复杂的系统架构设计。
+
+
+Entity 实体类
+class User extends CEntity
+{
+
+    // 实现读写分离（分库）
+    public function getDbConnection()
+    {
+        if($this->isDbReading())
+        {
+            return Yii::app()->readDb;
+        }
+        else
+        {
+            return Yii::app()->writeDb;
+        }
+    }
+
+    // 实现分表, 根据Id进行散列
+    private $tableName = "tbl_user_1";
+    public function updateMeta($id)
+    {
+        $this->tableName = "tbl_user_".($id%10);
+			
+		$this->refreshMetaData();
+		
+		return $this;
+    }
+
+    public function tableName()
+    {
+        return $this->tableName;
+    }
+
+    public function findByPk($pk)
+    {
+        $this->updateMeta($pk);
+        return parent::findByPk($pk);
+    }
+
+    // 增加工作单元特性
+	public function behaviors() {
+		return array('UnitOfWorkBehavior' => array('class' => 'UnitOfWorkBehavior'));
+	}
+
+}
+
+使用：
+
+// 分表
+$user = User::model()->updateMeta(10)->findByPk(10);
