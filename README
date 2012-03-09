@@ -2,7 +2,7 @@ YORM
 
 Advanced Yii ORM Plugin
 
-YORM是一款Yii的第三方ORM插件，以实现一些高级特性，如：读写分离，分表，分库，领域实体，缓存，全局唯一ID以及工作单元。
+YORM是一款Yii的第三方ORM插件，为Yii提供一系列企业应用架构模式中的高级特性，如：读写分离，分表，分库，领域实体，缓存，全局唯一ID以及工作单元。
 
 YORM主要通过继承了Yii的CActiveRecord类开发的CEntity类（实体类），以及一些实现高级特性的行为类，来使Yii程序支持复杂的系统架构设计。
 
