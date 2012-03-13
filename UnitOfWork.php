@@ -73,7 +73,9 @@ class UnitOfWork extends CComponent
 			foreach($this->_dbconns as $conn)
 			{
 				$entity->getDbConnection()->rollback();
-			}	
+			}
+			
+			throw $e;
 		}
 		
 	}
