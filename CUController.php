@@ -1,5 +1,12 @@
 <?php
 
+/**
+ * 
+ * Enter description here ...
+ * @author lifei
+ *
+ */
+
 
 class CUController extends CController
 {

@@ -53,7 +53,8 @@ class UnitOfWork extends CComponent
 		try {
 			
 			foreach ($this->_updateItems as $key => $entity) {
-				$entity->update();
+				if($entity->update())
+					throw new CDbException('并发冲突');
 			}
 			
 			foreach ($this->_insertItems as $key => $entity) {

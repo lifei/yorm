@@ -32,8 +32,72 @@ class CEntity extends CActiveRecord
 	
 	private $_isRemoved = false;
 	
+	/** 乐观离线锁的key字段 */
+	protected $versionKey = false;
+	
+	/** 乐观离线锁的预存值 */
+	protected $versionValue = 0;
+	
 	/**
 	 * 
+	 * @see CActiveRecord::getOldPrimaryKey()
+	 */
+	final public function getOldPrimaryKey()
+	{
+		$pk = $this->getOldPrimaryKey();
+		
+		if(!$this->versionKey) 
+		{
+			return $pk;
+		}
+		
+		if(is_array($pk)) {
+			if(isset($pk[$this->versionKey])) {
+				return array($this->versionKey => $this->versionValue) + $pk;
+			}
+			return $pk;
+		}
+		
+		return array($this->primaryKey() => $pk, $this->versionKey => $this->versionValue);
+	}
+	
+	/**
+	 * Updates the row represented by this active record.
+	 * All loaded attributes will be saved to the database.
+	 * Note, validation is not performed in this method. You may call {@link validate} to perform the validation.
+	 * @param array $attributes list of attributes that need to be saved. Defaults to null,
+	 * meaning all attributes that are loaded from DB will be saved.
+	 * @return boolean whether the update is successful
+	 * @throws CException if the record is new
+	 */
+	public function update($attributes=null)
+	{
+		if(!$this->_isdirty) {
+			return true;
+		}
+	
+		$attributes = array_unique($this->_dirtykeys);
+	
+		if($this->getIsNewRecord())
+			throw new CDbException(Yii::t('yii','The active record cannot be updated because it is new.'));
+		if($this->beforeSave())
+		{
+			Yii::trace(get_class($this).'.update()','system.db.ar.CActiveRecord');
+			if($this->_pk===null)
+				$this->_pk=$this->getPrimaryKey();
+			if(0 == $this->updateByPk($this->getOldPrimaryKey(),$this->getAttributes($attributes)))
+			{
+				return false;
+			}
+			$this->_pk=$this->getPrimaryKey();
+			$this->afterSave();
+			return true;
+		}
+		else
+			return false;
+	}
+	
+	/**
 	 * @return boolean
 	 */
 	public function isDirty()
@@ -52,14 +116,23 @@ class CEntity extends CActiveRecord
 	
 	protected function beforeSave()
 	{
+		// 时间戳
 	    if($this->isNewRecord) {
             $this->createtime=new CDbExpression('NOW()');
+            $this->updatetime=new CDbExpression('NOW()');
         }
         else {
             $this->updatetime=new CDbExpression('NOW()');
         }
         
+        // Dao更新状态
         $this->setDbWriting();
+        
+        // 乐观锁更新
+        if($this->versionKey && isset($this->{$this->versionKey})) {
+        	$this->versionValue = $this->{$this->versionKey};
+        	$this->{$this->versionKey}++;
+        }
 		return parent::beforeSave();
 	}
 	
@@ -139,19 +212,6 @@ class CEntity extends CActiveRecord
 		
 	}
 	
-	/**
-	 * 只处理dirty的字段
-	 * @note 不支持指定更新字段
-	 * @see CActiveRecord::update()
-	 */
-	public function update($attributes = null) {
-		if(!$this->_isdirty) {
-			return true;
-		}
-	
-		return parent::update(array_unique($this->_dirtykeys));
-	}
-	
 	public function isDbReading()
 	{
 		return $this->_isDbReading;
@@ -170,7 +230,9 @@ class CEntity extends CActiveRecord
 		return $this->_isRemoved;
 	}
 	
-	// DAO方法
+	//////////////////////////////////////////////////////////////////////////////////////////////
+	//                                          DAO方法                                         //
+	//////////////////////////////////////////////////////////////////////////////////////////////
 	protected function getCacheInstance()
 	{
 		
